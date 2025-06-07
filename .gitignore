@@ -23,7 +23,7 @@
 hs_err_pid*
 
 # External config files
-config.properties
+src/main/resources/config.properties
 
 # IDE configuration files
 # IntelliJ
