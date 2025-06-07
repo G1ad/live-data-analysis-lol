@@ -1,16 +1,7 @@
-# Compiled class files
-/target/
-
-# Log files
+target/
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
-
-# Package Files
 *.jar
 *.war
 *.nar
@@ -18,26 +9,13 @@
 *.zip
 *.tar.gz
 *.rar
-
-# virtual machine crash logs
 hs_err_pid*
-
-# External config files
 src/main/resources/config.properties
-
-# IDE configuration files
-# IntelliJ
 .idea/
 *.iml
-
-# Eclipse
 .classpath
 .project
 .settings/
-
-# VS Code
 .vscode/
-
-# Mac and Windows system files
 .DS_Store
 Thumbs.db
