@@ -23,6 +23,7 @@ public class ItemsJson {
         ObjectMapper mapper = ObjectMapperSingeltone.getInstance();
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         JsonNode jsonNode = mapper.readTree(ApiManager.makeApiCall(allItems));
+        System.out.println("***Downloading items file***");
 
         writeJsonToFile(jsonNode, "Items.txt");
     }
@@ -34,5 +35,6 @@ public class ItemsJson {
         byte[] jsonDataBytes = jsonNode.toString().getBytes(StandardCharsets.UTF_8.name());
 
         Files.write(filePath, jsonDataBytes, StandardOpenOption.TRUNCATE_EXISTING);
+        System.out.println("***Writing to " + fileName + "***");
     }
 }

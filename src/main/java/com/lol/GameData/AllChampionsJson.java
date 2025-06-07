@@ -26,6 +26,7 @@ public class AllChampionsJson {
         ObjectMapper mapper = ObjectMapperSingeltone.getInstance();
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         JsonNode jsonNode = mapper.readTree(ApiManager.makeApiCall(allChampions));
+        System.out.println("***Downloading champions file***");
 
         writeJsonToFile(jsonNode, "AllChampions.txt");
     }
@@ -37,5 +38,6 @@ public class AllChampionsJson {
         byte[] jsonDataBytes = jsonNode.toString().getBytes(StandardCharsets.UTF_8.name());
 
         Files.write(filePath, jsonDataBytes, StandardOpenOption.TRUNCATE_EXISTING);
+        System.out.println("***Writing to " + fileName + "***");
     }
 }

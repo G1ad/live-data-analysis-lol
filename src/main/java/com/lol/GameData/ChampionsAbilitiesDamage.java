@@ -14,7 +14,7 @@ import lombok.Data;
 @Data
 public class ChampionsAbilitiesDamage {
 
-    ChampionList championList;
+    InitializeGame championList;
 
     public List<Double> getFinalDamage() throws KeyManagementException, NoSuchAlgorithmException, IOException {
         List<Double> leeSinDamages = getLeeSinDamage();
@@ -31,7 +31,7 @@ public class ChampionsAbilitiesDamage {
     }
 
     public List<Double> getLeeSinDamage() throws KeyManagementException, NoSuchAlgorithmException, IOException {
-        championList = new ChampionList();
+        championList = new InitializeGame();
         int qLevel = championList.getDataGame().getActivePlayer().getAbilities().getQ().getAbilityLevel();
 
         JsonNode leeSinNodeQ = championList.readChampionFromJson().get(String.valueOf("LeeSin"));
