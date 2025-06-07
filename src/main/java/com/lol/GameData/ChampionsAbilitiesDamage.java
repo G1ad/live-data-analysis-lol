@@ -6,74 +6,105 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.lol.GameDataPojo.DamageResult;
+import com.lol.GameDataPojo.EnemyChampionStats;
 import lombok.Data;
 
 @Data
 public class ChampionsAbilitiesDamage {
 
-    InitializeGame championList;
+    private final LocalGameService gameService;
 
-    public List<Double> getFinalDamage() throws KeyManagementException, NoSuchAlgorithmException, IOException {
-        List<Double> leeSinDamages = getLeeSinDamage();
-        List<Double> enemyArmors = championList.getEnemyResistance("armor");
-        List<Double> finalDamages = new ArrayList<>();
-
-        int size = Math.min(leeSinDamages.size(), enemyArmors.size());
-        for (int i = 0; i < size; i++) {
-            double damage = leeSinDamages.get(i) / (1 + (enemyArmors.get(i) / 100f));
-            finalDamages.add(damage);
-        }
-    
-        return finalDamages;
+    public ChampionsAbilitiesDamage(LocalGameService gameService) {
+        this.gameService = gameService;
     }
 
-    public List<Double> getLeeSinDamage() throws KeyManagementException, NoSuchAlgorithmException, IOException {
-        championList = new InitializeGame();
-        int qLevel = championList.getDataGame().getActivePlayer().getAbilities().getQ().getAbilityLevel();
+    public List<DamageResult> calculateLeeSinDamageOnEnemies() throws IOException, NoSuchAlgorithmException, KeyManagementException {
+        List<DamageResult> finalResults = new ArrayList<>();
 
-        JsonNode leeSinNodeQ = championList.readChampionFromJson().get(String.valueOf("LeeSin"));
+        if (!gameService.getMyChampionName().orElse("").equalsIgnoreCase("LeeSin")) {
+            return finalResults;
+        }
 
-        List<Integer> damageQ1 = extractValues(leeSinNodeQ, "Q", 0, 0, 0, 0);
-        List<Integer> minDamageQ2 = extractValues(leeSinNodeQ, "Q", 1, 0, 0, 0);
-        List<Integer> maxDamageQ2 = extractValues(leeSinNodeQ, "Q", 1, 0, 1, 0);
+        List<Double> rawDamages = getLeeSinRawQDamage();
+        if (rawDamages.isEmpty()) return finalResults;
 
-        double scalingFirstQ = extractScaling(leeSinNodeQ, "Q", 0, 0, 0, 1);
-        double scalingSecondQ1 = extractScaling(leeSinNodeQ, "Q", 1, 0, 0, 1);
-        double scalingSecondQ2 = extractScaling(leeSinNodeQ, "Q", 1, 0, 1, 1);
+        double rawDamageQ1 = rawDamages.get(0);
+        double rawDamageQ2Min = rawDamages.get(1);
+        double rawDamageQ2Max = rawDamages.get(2);
 
-        double bonusDamageFirstQ = calculateBonusDamage(championList.getBonusAD(), scalingFirstQ);
-        double bonusDamageMinSecondQ = calculateBonusDamage(championList.getBonusAD(), scalingSecondQ1);
-        double bonusDamageMaxSecondQ = calculateBonusDamage(championList.getBonusAD(), scalingSecondQ2);
+        List<EnemyChampionStats> enemyStatsList = gameService.getCalculatedEnemyStats();
 
-        double finalDamageFirstQ = calculateFinalDamage(qLevel, damageQ1, bonusDamageFirstQ);
-        double finalDamageMinSecondQ = calculateFinalDamage(qLevel, minDamageQ2, bonusDamageMinSecondQ);
-        double finalDamageMaxSecondQ = calculateFinalDamage(qLevel, maxDamageQ2, bonusDamageMaxSecondQ);
+        for (EnemyChampionStats enemy : enemyStatsList) {
+            double enemyArmor = enemy.getArmor();
 
-        List<Double> totalDamage = Arrays.asList(finalDamageFirstQ, finalDamageMinSecondQ, finalDamageMaxSecondQ);
+            double damageMultiplier = 100.0 / (100.0 + enemyArmor);
 
-        return totalDamage;
+            double finalDamageQ1 = rawDamageQ1 * damageMultiplier;
+            double finalDamageQ2Min = rawDamageQ2Min * damageMultiplier;
+            double finalDamageQ2Max = rawDamageQ2Max * damageMultiplier;
+
+            finalResults.add(new DamageResult(
+                    enemy.getChampionName(),
+                    Math.round(finalDamageQ1),
+                    Math.round(finalDamageQ2Min),
+                    Math.round(finalDamageQ2Max)
+            ));
+        }
+
+        return finalResults;
+    }
+
+    private List<Double> getLeeSinRawQDamage() throws IOException, NoSuchAlgorithmException, KeyManagementException {
+        int qLevel = gameService.getGameData()
+                .flatMap(data -> Optional.ofNullable(data.getActivePlayer()))
+                .flatMap(player -> Optional.ofNullable(player.getAbilities()))
+                .map(abilities -> abilities.getQ().getAbilityLevel())
+                .orElse(0);
+
+        if (qLevel == 0) return new ArrayList<>();
+
+        JsonNode leeSinNode = gameService.readChampionFromJson().get("LeeSin");
+        if (leeSinNode == null) throw new IOException("Dati di Lee Sin non trovati in champions.json");
+
+        double bonusAD = gameService.getBonusAD();
+
+        // Calcolo Q1
+        List<Integer> baseDamageQ1 = extractValues(leeSinNode, "Q", 0, 0, 0, 0);
+        double scalingQ1 = getScaling(leeSinNode, "Q", 0, 0, 0, 1);
+        double finalDamageQ1 = calculateFinalDamage(qLevel, baseDamageQ1, calculateBonusDamage(bonusAD, scalingQ1));
+
+        // Calcolo Q2
+        List<Integer> minDamageQ2 = extractValues(leeSinNode, "Q", 1, 0, 0, 0);
+        double scalingMinQ2 = getScaling(leeSinNode, "Q", 1, 0, 0, 1);
+        double finalDamageMinQ2 = calculateFinalDamage(qLevel, minDamageQ2, calculateBonusDamage(bonusAD, scalingMinQ2));
+
+        List<Integer> maxDamageQ2 = extractValues(leeSinNode, "Q", 1, 0, 1, 0);
+        double scalingMaxQ2 = getScaling(leeSinNode, "Q", 1, 0, 1, 1);
+        double finalDamageMaxQ2 = calculateFinalDamage(qLevel, maxDamageQ2, calculateBonusDamage(bonusAD, scalingMaxQ2));
+
+        return Arrays.asList(finalDamageQ1, finalDamageMinQ2, finalDamageMaxQ2);
     }
 
     private List<Integer> extractValues(JsonNode node, String ability, int abilityIndex,int effectsIndex,int levelingIndex, int modfiersIndex) {
         List<Integer> valuesList = new ArrayList<>();
         JsonNode valuesNode = node.path("abilities").path(ability).get(abilityIndex).path("effects").get(effectsIndex).path("leveling")
-        .get(levelingIndex).path("modifiers").get(modfiersIndex).path("values");
-    
+                .get(levelingIndex).path("modifiers").get(modfiersIndex).path("values");
+
         for (JsonNode value : valuesNode) {
             valuesList.add(value.asInt());
         }
-
         return valuesList;
     }
 
-    private double extractScaling(JsonNode node, String ability, int abilityIndex,int effectsIndex,int levelingIndex, int modfiersIndex) {
+    private double getScaling(JsonNode node, String ability, int abilityIndex, int effectsIndex, int levelingIndex, int modfiersIndex) {
         JsonNode values = node.path("abilities").path(ability).get(abilityIndex).path("effects").get(effectsIndex).path("leveling")
-        .get(levelingIndex).path("modifiers").get(modfiersIndex).path("values");
-
-            return values.isArray() && values.size() > 0 ? values.get(0).asDouble() : 0;
+                .get(levelingIndex).path("modifiers").get(modfiersIndex).path("values");
+        return values.isArray() && values.size() > 0 ? values.get(0).asDouble() : 0;
     }
 
     private double calculateBonusDamage(double bonusAD, double scaling) {

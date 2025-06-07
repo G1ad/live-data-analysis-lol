@@ -6,10 +6,12 @@ import java.security.NoSuchAlgorithmException;
 
 import com.lol.Config.*;
 import com.lol.GameData.AllChampionsJson;
-import com.lol.GameData.InitializeGame;
+import com.lol.GameData.LocalGameService;
 import com.lol.GameData.ItemsJson;
 import com.merakianalytics.orianna.Orianna;
 import com.merakianalytics.orianna.types.common.Platform;
+
+import static javafx.application.Application.launch;
 
 public class Main {
     public static void main(String[] args) throws IOException, KeyManagementException, NoSuchAlgorithmException, InterruptedException {
@@ -18,10 +20,10 @@ public class Main {
         AllChampionsJson championsFileDownload = new AllChampionsJson();
         ItemsJson itemsFileDownload = new ItemsJson();
 
-        InitializeGame game = new InitializeGame();
-        game.fetchData();
+        LocalGameService game = new LocalGameService();
 
-        System.out.println(game.extractMySummonerName());
+        System.out.println(game.getDataGame().allPlayers.get(0).runes);
+
         //championsFileDownload.fetchDataAndWriteToFile();
         //itemsFileDownload.fetchDataAndWriteToFile();
     }
