@@ -13,10 +13,7 @@ import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lol.Config.ApiManager;
-import com.lol.Config.CamelCaseConverter;
-import com.lol.Config.Configs;
-import com.lol.Config.ObjectMapperSingeltone;
+import com.lol.Config.*;
 import com.lol.GameDataPojo.ActivePlayer;
 import com.lol.GameDataPojo.AllPlayers;
 import com.lol.GameDataPojo.DataCurrentGame;
@@ -35,9 +32,10 @@ public class ChampionList  {
     }
 
     public void fetchData() throws IOException, KeyManagementException, NoSuchAlgorithmException {
+        String localUrl = ConfigLoader.getUrlLocal();
         mapper = ObjectMapperSingeltone.getInstance();
         mapper.configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
-        dataGame = mapper.readValue(ApiManager.makeApiCall(Configs.URL_LOCAL), DataCurrentGame.class);
+        dataGame = mapper.readValue(ApiManager.makeApiCall(localUrl), DataCurrentGame.class);
     }
 
     public String extractMySummonerName() {
@@ -144,7 +142,8 @@ public class ChampionList  {
     }
 
     public JsonNode readItemsFromJson() throws IOException {
-        File fileItems = new File(Configs.ITEMS_FILE_PATH);
+        String pathItems = ConfigLoader.getItemsPath();
+        File fileItems = new File(pathItems);
         JsonNode itemsJson = mapper.readValue(fileItems, JsonNode.class);
         return itemsJson;
     }
@@ -171,7 +170,8 @@ public class ChampionList  {
     }
 
     public JsonNode readChampionFromJson() throws IOException {
-        File fileChampions = new File(Configs.CHAMPIONS_FILE_PATH);
+        String pathChampions = ConfigLoader.getChampionsPath();
+        File fileChampions = new File(pathChampions);
         JsonNode champion = mapper.readValue(fileChampions, JsonNode.class);
 
         return champion;

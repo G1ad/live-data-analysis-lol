@@ -13,15 +13,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.lol.Config.ApiManager;
-import com.lol.Config.Configs;
+import com.lol.Config.ConfigLoader;
 import com.lol.Config.ObjectMapperSingeltone;
 
 public class ItemsJson {
     
     public void fetchDataAndWriteToFile() throws IOException, KeyManagementException, NoSuchAlgorithmException {
+        String allItems = ConfigLoader.getAllItems();
         ObjectMapper mapper = ObjectMapperSingeltone.getInstance();
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        JsonNode jsonNode = mapper.readTree(ApiManager.makeApiCall(Configs.URL_ITEMS));
+        JsonNode jsonNode = mapper.readTree(ApiManager.makeApiCall(allItems));
 
         writeJsonToFile(jsonNode, "Items.txt");
     }

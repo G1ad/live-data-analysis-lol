@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.lol.Config.ApiManager;
-import com.lol.Config.Configs;
+import com.lol.Config.ConfigLoader;
 import com.lol.Config.ObjectMapperSingeltone;
 
 import lombok.Data;
@@ -22,9 +22,10 @@ import lombok.Data;
 public class AllChampionsJson {
     
     public void fetchDataAndWriteToFile() throws IOException, KeyManagementException, NoSuchAlgorithmException {
+        String allChampions = ConfigLoader.getAllChampions();
         ObjectMapper mapper = ObjectMapperSingeltone.getInstance();
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        JsonNode jsonNode = mapper.readTree(ApiManager.makeApiCall(Configs.URL_ALL_CHAMPIONS));
+        JsonNode jsonNode = mapper.readTree(ApiManager.makeApiCall(allChampions));
 
         writeJsonToFile(jsonNode, "AllChampions.txt");
     }
